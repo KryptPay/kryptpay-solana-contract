@@ -1,0 +1,10 @@
+{
+  "name": "Krystal",
+  "symbol": "KRS",
+  "description": "Reward token to users of KryptPay.",
+  "image": "https://bafybeihmab6sejkdxu5ndkwac2ttjnbysoai2oqxgxdhh6mnb7nfulfgsi.ipfs.dweb.link/",
+  "extensions": {
+    "website": "https://kryptpay.framer.website/",
+    "twitter": "https://twitter.com/Krypt_Pay"
+  }
+}

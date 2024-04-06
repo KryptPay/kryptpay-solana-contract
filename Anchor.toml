@@ -4,14 +4,14 @@
 seeds = false
 skip-lint = false
 
-[programs.localnet]
-kryptpay = "7KSFNXrjkYoHbWj7YBV1kXCabY7kTnFB6VNNDAX83fbc"
+[programs.devnet]
+kryptpay = "6k73LWhMtLhJLVyC3qQGa8pvDZ2GUXnLAb9n3juk8u3A"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/Users/gloryagatevure/.config/solana/id.json"
 
 [scripts]
