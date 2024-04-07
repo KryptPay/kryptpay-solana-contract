@@ -10,6 +10,9 @@ The KrytPay program is currently deployed on devnet. You can look up the details
 # Krytal Token
 KryptPay has a reward token called Krystal for rewarding users as the transact. Details of the token can be found [here](https://explorer.solana.com/address/CUk8ssbVUtc5HA6o458Cm2pGGMWMbwm7TjGTmhmhomvD?cluster=devnet).
 
+# Mobile App
+Here is the link to KryptPay mobile app [repo](https://github.com/KryptPay/kryptpay-mobile-app)
+
 # Local Setup Guide
 - Git clone the repo) 
 - Do `npm i` and `cargo build` to install all required dependencies and `cargo update` to update all required dependencies
