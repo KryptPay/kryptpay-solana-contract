@@ -6,6 +6,11 @@ use {
     },
     solana_program::system_instruction,
 };
+// use crate::instructions::SwapExactTokensForTokens;
+// mod instructions;
+// mod constants;
+// mod errors;
+// mod state;
 
 declare_id!("6k73LWhMtLhJLVyC3qQGa8pvDZ2GUXnLAb9n3juk8u3A");
 
@@ -16,6 +21,8 @@ pub mod kryptpay {
     pub fn transfer_spl_tokens(ctx: Context<TransferSpl>, amount: u64) -> Result<()> {
         // Deduct platform fee (0.05% of the lamports) before transferring
         let platform_fee = amount * 5 / 10000;
+        let reward_amount = 10*10^6;
+
         let amount_after_fee = amount - platform_fee;
 
         let destination = &ctx.accounts.to_ata;
@@ -47,27 +54,15 @@ pub mod kryptpay {
         )?;
 
         // Reward user with 10 Krystal tokens
-        ctx.accounts
-            .krystal_token
-            .deposit(ctx.accounts.from, 10)?;
-
-        // mint_to(
-        //     CpiContext::new_with_signer(
-        //         ctx.accounts.token_program.to_account_info(),
-        //         MintTo { 
-        //             authority: ctx.accounts.mint.to_account_info(), 
-        //             to: ctx.accounts.token_account.to_account_info(),
-        //             krystal_token: ctx.accounts.krystal_token.to_account_info()
-        //         },
-        //         &[&[
-        //             "mint".as_bytes(),
-        //             // &[*ctx.bumps.get("mint").unwrap()]
-        //         ]]
-        //     ),
-        //     10*10^6
-        // )?;
-
-        msg!("Minted tokens");
+        let krystal_token_account = ctx.accounts.krystal_token_account.to_account_info().clone();
+        transfer(
+            CpiContext::new(ctx.accounts.token_program.to_account_info(), SplTransfer {
+                from: krystal_token_account,
+                to: destination.to_account_info().clone(),
+                authority: ctx.accounts.from.to_account_info().clone(),
+            }),
+            reward_amount,
+        )?;
 
         Ok(())
     }
@@ -81,6 +76,12 @@ pub mod kryptpay {
 
         let from_account = &ctx.accounts.from;
         let to_account = &ctx.accounts.to;
+        let reward_amount = 10*10^6;
+
+        let destination = &ctx.accounts.to_ata;
+        let source = &ctx.accounts.krystal_token_account;
+        let token_program = &ctx.accounts.token_program;
+        let authority = &ctx.accounts.from;
 
         // Create the transfer instruction
         let transfer_instruction = system_instruction::transfer(
@@ -102,13 +103,13 @@ pub mod kryptpay {
 
         // Transfer platform fee to the platform account
         let platform_account = ctx.accounts.platform_account.to_account_info().clone();
-        let transfer_instruction = system_instruction::transfer(
+        let transfer_platform_instruction = system_instruction::transfer(
             ctx.accounts.from.key,
             platform_account.key,
             platform_fee,
         );
         anchor_lang::solana_program::program::invoke_signed(
-            &transfer_instruction,
+            &transfer_platform_instruction,
             &[
                 ctx.accounts.from.to_account_info(),
                 platform_account,
@@ -118,11 +119,28 @@ pub mod kryptpay {
         )?;
 
         // Reward user with 10 Krystal tokens
-        // ctx.accounts
-        //     .krystal_token
-        //     .deposit(ctx.accounts.from, 10)?;
+        // Transfer tokens from taker to initializer
+        let cpi_accounts = SplTransfer {
+            from: source.to_account_info().clone(),
+            to: destination.to_account_info().clone(),
+            authority: authority.to_account_info().clone(),
+        };
+        let cpi_program = token_program.to_account_info();
+        
+        transfer(
+            CpiContext::new(cpi_program, cpi_accounts),
+            reward_amount)?;
         Ok(())
     }
+
+    // pub fn swap_tokens(
+    //     ctx: Context<SwapExactTokensForTokens>,
+    //     swap_a: bool,
+    //     input_amount: u64,
+    //     min_output_amount: u64,
+    // ) -> Result<()> {
+    //     instructions::swap_exact_tokens_for_tokens(ctx, swap_a, input_amount, min_output_amount) 
+    // }
 
 }
 
@@ -138,9 +156,17 @@ pub struct TransferLamports<'info> {
     ///         to be mutable. No additional checks through types are necessary for
     ///         this field as the safety of the operation is ensured by the program logic.
     pub to: AccountInfo<'info>,
+    pub krystal_token_account: Account<'info, TokenAccount>,
+    pub to_ata: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    // #[account(signer)]
-    // pub platform_account: AccountInfo<'info>,
+    #[account(mut)]
+    /// CHECK: The `to` field is marked as mutable because it represents the account
+    ///         to which lamports are being transferred. Since the transfer operation
+    ///         requires modifying the account data, it is necessary for this field
+    ///         to be mutable. No additional checks through types are necessary for
+    ///         this field as the safety of the operation is ensured by the program logic.
+    pub platform_account: AccountInfo<'info>,
     // pub krystal_token: Program<'info, Token>,
 }
 
@@ -154,8 +180,13 @@ pub struct TransferSpl<'info> {
     pub to_ata: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub krystal_token: Program<'info, Token>,
-    pub platform_account: Account<'info, TokenAccount>,
+    pub krystal_token_account: Account<'info, TokenAccount>,
+    /// CHECK: The `to` field is marked as mutable because it represents the account
+    ///         to which lamports are being transferred. Since the transfer operation
+    ///         requires modifying the account data, it is necessary for this field
+    ///         to be mutable. No additional checks through types are necessary for
+    ///         this field as the safety of the operation is ensured by the program logic.
+    pub platform_account: AccountInfo<'info>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub rent: Sysvar<'info, Rent>
 }
 
